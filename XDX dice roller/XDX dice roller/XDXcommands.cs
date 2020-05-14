@@ -7,7 +7,7 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 
 namespace XDX_dice_roller
-{
+{    
     class XDXcommands
     {
         public enum STATE
@@ -16,38 +16,44 @@ namespace XDX_dice_roller
             normal,
             savage,
             hexagon,
+            wta,
+            aventure,
+            MAXVALUE,
+        }
+
+        public enum MOONPHASE
+        {
+            none,
+            New,
+            Crescent,
+            Half,
+            Gibbous,
+            Full,
+            MAXVALUE
         }
 
         STATE state = STATE.none;
         int reroll = 0;
-        int succesCap = 0;
+
+        //SavageWorld
+        Dictionary<string, int> tokens = new Dictionary<string, int>();
 
 
-        static int[] MyRollMethod(int nbDice = 0, int nbFaces = 0, int succesCap = 0, int reroll = 0)
+
+
+        static int[] MyRollMethod(int nbDice = 0, int nbFaces = 0)
         {
             Random random = new Random();
 
             int[] result = new int[nbDice];
-            int totalSucces = 0;
-            int totalRerolls = 0;
-            int[] sendResult = new int[2];
 
 
             for (int i = 0; i < nbDice; i++)
             {
                 result[i] = random.Next(1, nbFaces + 1);
-
-                if (result[i] == reroll)
-                    totalRerolls++;
-
-                if (result[i] >= succesCap)
-                    totalSucces++;
             }
 
-            sendResult[0] = totalSucces;
-            sendResult[1] = totalRerolls;
-
-            return sendResult;
+            return result;
         }
 
         static int[] Rolloto(int nbDice)
@@ -76,53 +82,33 @@ namespace XDX_dice_roller
         }
 
         [Command("roll")]
-        public async Task Roll(CommandContext commandContext, int diceFaces = 0, int numberOfDices = 0)
+        public async Task Roll(CommandContext commandContext, int firstParam = 0, int secondParam = 0)
         {
             switch (state)
             {
+                
                 case STATE.none:
                     await commandContext.RespondAsync($"You need to set the bot before using a rolling mehtod");
-                    await commandContext.RespondAsync($"PLease refer to the !h or !table to apply a setting");
+                    await commandContext.RespondAsync($"Please refer to the !h or !table to apply a setting");
                     break;
 
                 case STATE.normal:
-                    //string[] split = commandContext.Message.Content.ToLower().Split(" ");
 
-                    //split = split[1].Split("d");
+                    
+                    int[] Crohmsultat = MyRollMethod(firstParam, secondParam);
 
-                    //int nbDice = int.Parse(split[0]);
-                    //int nbFaces = int.Parse(split[1]);
-                    //if (succesCap > 0)
-                    //{
-                    //    if (nbFaces >= succesCap)
-                    //    {
-                    //        int[] results = MyRollMethod(nbDice, nbFaces, succesCap, reroll);
+                    string allResults = "All results : ";
 
-                    //        if (reroll > 0)
-                    //        {
-                    //            await commandContext.Message.RespondAsync("You rolled " + nbDice + "D" + nbFaces + "." + " Succes are set on : " + succesCap + ", Reroll are set on : " + reroll + ".");
-                    //            await commandContext.Message.RespondAsync("Succes : " + results[0] + ", Rerolls : " + results[1] + ".");
-                    //        }
-                    //        else
-                    //        {
-                    //            await commandContext.Message.RespondAsync("You rolled " + nbDice + "D" + nbFaces + "." + " Succes are set on : " + succesCap + ".");
-                    //            await commandContext.Message.RespondAsync("Succes : " + results[0] + ".");
-                    //        }
-                    //    }
-                    //    else
-                    //    {
-                    //        await commandContext.Message.RespondAsync("Your faces are inferior to the succes cap, please check your numbers.");
-                    //        await commandContext.Message.RespondAsync("Succes are set on : " + succesCap + ".");
-                    //    }
-                    //}
-                    //else
-                    //    await commandContext.Message.RespondAsync("The succes cap is set on 0 or less. Please be sure that it's atleast at 1.");
+                    allResults += string.Join(" | ", Crohmsultat);
+
+                    await commandContext.RespondAsync(allResults);
+
                     break;
 
                 case STATE.savage:
 
                     Random random = new Random();
-                    int nbDiceFaceSavage = diceFaces;
+                    int nbDiceFaceSavage = firstParam;
                     int result;
 
                     result = random.Next(1, nbDiceFaceSavage + 1);
@@ -142,11 +128,90 @@ namespace XDX_dice_roller
                     break;
 
                 case STATE.hexagon:
-                    int nbDiceRolloto = diceFaces;
-
+                    int nbDiceRolloto = firstParam;
                     int[] resultRolloto = Rolloto(nbDiceRolloto);
 
                     await commandContext.Message.RespondAsync($"DES : " + nbDiceRolloto + ", SUCCES : " + resultRolloto[0] + ", SIX : " + resultRolloto[1]);
+                    break;
+
+                case STATE.wta:
+
+                    bool botch = false;
+                    bool botchPrevent = false;
+                    const int nbDicesFaceWta = 10;
+                    int difficulty = secondParam;
+                    int nbDicesRoll = firstParam;
+                    int[] results = new int[nbDicesRoll];
+                    int succes = 0;
+
+                    if (nbDicesRoll > 0 && difficulty > 0)
+                    {
+                        for (int i = 0; i < nbDicesRoll; ++i)
+                        {
+
+                            results[i] = new Random().Next(1, nbDicesFaceWta + 1);
+
+                            if (results[i] >= difficulty)
+                            {
+                                ++succes;
+                                if (!botchPrevent)
+                                {
+                                    botchPrevent = true;
+                                }
+                            }
+                            else if (results[i] == 1)
+                            {
+                                --succes;
+                            }
+                        }
+
+                        for (int i = 0; i < results.Length; i++)
+                        { 
+                            if ( succes <= 0 && results[i] == 1 && !botchPrevent)
+                            {
+                                botch = true;
+                            }
+                        }
+
+                        string debugNb = "All results : ";
+
+                        debugNb += string.Join(" | ", results);
+
+                        if (succes > 0)
+                        {
+                            await commandContext.Message.RespondAsync($"You rolled : { nbDicesRoll} dices at difficulty {difficulty} \nYou earned : { succes} succes \n{debugNb}");
+                        }
+                        else if (botch)
+                        {
+                            await commandContext.Message.RespondAsync($"You rolled : {nbDicesRoll} dices at difficulty {difficulty} \nBotch !... Let's see what the StoryTeller will have for you :)... \n{debugNb}");
+                        }
+                        else
+                        {
+                            await commandContext.Message.RespondAsync($"You rolled : {nbDicesRoll} dices at difficulty {difficulty} \nYou failed... sorry \n{debugNb}");
+                        }
+
+                    }
+                    else
+                    {
+                        await commandContext.Message.RespondAsync($"You entered a false parameter. The role command is : \"!roll Difficulty Number_Of_Dices.\"");
+                    }
+                    break;
+
+                case STATE.aventure:
+
+                    Random Aventurand = new Random();
+                    int nbFaces = secondParam;
+                    int nbdices = firstParam;
+
+                    if (nbFaces != 6)
+                    {
+
+                    }
+                    else
+                    {
+
+                    }
+
                     break;
 
                 default:
@@ -154,6 +219,68 @@ namespace XDX_dice_roller
             }
         }
 
+
+        [Command("tabletop")]
+        public async Task SetTableTop(CommandContext commandContext, string tableTop = "")
+        {
+            if (tableTop == "")
+            {
+                STATE tempState;
+                string tempString = "";
+                
+                await commandContext.Message.RespondAsync($"Commands :");
+
+                for (int i = 1; i < (int)STATE.MAXVALUE; i++)
+                {
+                    tempState = (STATE)i;
+                    tempString += $"'!tabletop " + tempState.ToString().ToLower() + "' for the " + tempState.ToString() + " preset.\n";
+                }
+                    await commandContext.Message.RespondAsync(tempString);
+            }
+
+            if (tableTop.ToLower() == STATE.savage.ToString().ToLower())
+            {
+                state = STATE.savage;
+                await commandContext.Message.RespondAsync($"The dice bot has been set on : Savage mode.");
+            }
+
+            if (tableTop.ToLower() == STATE.hexagon.ToString().ToLower())
+            { 
+                state = STATE.hexagon;
+                await commandContext.Message.RespondAsync($"The dice bot has been set on : Hexagon mode.");
+            }
+
+            if (tableTop.ToLower() == STATE.normal.ToString().ToLower())
+            {
+                state = STATE.normal;
+                await commandContext.Message.RespondAsync($"The dice bot has been set on : Normal mode.");
+            }
+
+            if (tableTop.ToLower() == STATE.wta.ToString().ToLower())
+            {
+                state = STATE.wta;
+                await commandContext.Message.RespondAsync($"The dice bot has been set on : WereWolf The Apocalypse mode.");
+            }
+
+            if (tableTop.ToLower() == STATE.aventure.ToString().ToLower())
+            {
+                state = STATE.aventure;
+                await commandContext.Message.RespondAsync($"The dice bot has been set on : Aventure mode.");
+            }
+        }
+
+        [Command("h")]
+        public async Task HelpMe(CommandContext commandContext)
+        {
+            await commandContext.Message.RespondAsync($"Commands :");
+            await commandContext.Message.RespondAsync($"'!succes' X to set the number that its need to get a succes from the roll.");
+            await commandContext.Message.RespondAsync($"'!reroll' X to set the number that a reroll will be add to the pool.");
+            await commandContext.Message.RespondAsync($"'!roll' XDX to set the number of dice and faces, first X stand for dice number.");
+            await commandContext.Message.RespondAsync($"'!Tabletop Name' To use a preset of one of the table top rules. Please use '!Tabletop' to display all the TableTop available.");
+        }
+
+        #region SW
+        //Commands SavageWorld
         [Command("reroll")]
         public async Task Reroll(CommandContext commandContext)
         {
@@ -175,44 +302,138 @@ namespace XDX_dice_roller
             }
         }
 
-        [Command("tabletop")]
-        public async Task SetTableTop(CommandContext commandContext, string tableTop = "")
+        [Command("token")]
+        public async Task TokenUser(CommandContext commandContext, string name = "", int tokenNumber = 3)
         {
-            if (tableTop == "")
+            if (state == STATE.savage)
             {
-                await commandContext.Message.RespondAsync($"Commands :");
-                await commandContext.Message.RespondAsync($"'!tabletop Savage' for the Savage World preset.");
-                await commandContext.Message.RespondAsync($"'!tabletop Hexagon' for the Hexagon preset.");
-                await commandContext.Message.RespondAsync($"'!tabletop normal' for the normal preset.");
-            }
+                if (name != "")
+                {
+                    tokens.Add(name.ToLower(), tokenNumber);
+                    await commandContext.Message.RespondAsync($"Token created for : " + name + ", you have a total of : " + tokenNumber.ToString() + " coins !");
+                }
+                else
+                {
+                    await commandContext.Message.RespondAsync($"Please, enter a name for your character");
+                }
+            }            
+        }
 
-            if (tableTop.ToLower() == "savage")
+        [Command("list")]
+        public async Task CharacterList(CommandContext cc)
+        {
+            if (state == STATE.savage && tokens.Count > 0)
             {
-                state = STATE.savage;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : Savage mode.");
+                List<string> keys = new List<string>(this.tokens.Keys);
+                string temp = "";
+                for (int i = 0; i < tokens.Count; i++)
+                {
+                    temp += keys[i] + "\n";
+                }
+                await cc.Message.RespondAsync(" list of characters : \n" + temp);
             }
-
-            if (tableTop.ToLower() == "hexagon")
+            else
             {
-                state = STATE.hexagon;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : Hexagon mode.");
-            }
-
-            if (tableTop.ToLower() == "normal")
-            {
-                state = STATE.normal;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : Normal mode.");
+                await cc.Message.RespondAsync("There is no character listed yet.");
             }
         }
 
-        [Command("h")]
-        public async Task HelpMe(CommandContext commandContext)
+        [Command("usetoken")]
+        public async Task UseToken(CommandContext cc, string name = "")
         {
-            await commandContext.Message.RespondAsync($"Commands :");
-            await commandContext.Message.RespondAsync($"'!succes' X to set the number that its need to get a succes from the roll.");
-            await commandContext.Message.RespondAsync($"'!reroll' X to set the number that a reroll will be add to the pool.");
-            await commandContext.Message.RespondAsync($"'!roll' XDX to set the number of dice and faces, first X stand for dice number.");
-            await commandContext.Message.RespondAsync($"'!TabletopName' To use a preset of one of the table top rules. Please use '!Tabletop' to display all the TableTop available.");
+            name = name.ToLower();
+
+            if (name == "")
+            {
+                await cc.Message.RespondAsync("You need a character name for this command");
+                return;
+            }
+
+            if (state == STATE.savage && tokens[name] > 0)
+            {
+                --tokens[name];
+                await cc.Message.RespondAsync("Token remaining : " + tokens[name]);
+            }
+            else if (tokens[name] <= 0)
+            {
+                await cc.Message.RespondAsync("You have no token left.");
+            }
+            else
+            {
+                await cc.Message.RespondAsync("This character has not been created, please verify the name, or create one");
+            }
         }
+
+        [Command("checktoken")]
+        public async Task CheckToken(CommandContext cc, string name = "")
+        {
+            if (name == "")
+            {
+                await cc.Message.RespondAsync("You need a character name for this command");
+                return;
+            }
+
+            if (state == STATE.savage)
+            {
+                await cc.Message.RespondAsync("Token remaining : " + tokens[name]);
+            }
+        }
+        #endregion
+
+        #region WTA
+        [Command("moon")]
+        public async Task RollMoon(CommandContext commandContext)
+        {
+            if (state == STATE.wta)
+            {
+                Random random = new Random();
+
+                MOONPHASE enum_moonPhase = (MOONPHASE)random.Next(1, (int)MOONPHASE.MAXVALUE);
+
+                await commandContext.Message.RespondAsync($"The moon is a : {enum_moonPhase} moon");
+            }
+        }
+
+        [Command("rolldmg")]
+        public async Task RollDMG(CommandContext commandContext, int firstParam, int secondParam)
+        {
+            if (state == STATE.wta)
+            {
+                const int nbDicesFaceWta = 10;
+                int difficulty = secondParam;
+                int nbDicesRoll = firstParam;
+                int[] results = new int[nbDicesRoll];
+                int succes = 0;
+
+                if (nbDicesRoll > 0 && difficulty > 0)
+                {
+                    for (int i = 0; i < nbDicesRoll; ++i)
+                    {
+
+                        results[i] = new Random().Next(1, nbDicesFaceWta + 1);
+
+                        if (results[i] >= difficulty)
+                        {
+                            ++succes;
+                        }
+                    }
+
+                    string debugNb = "All results : ";
+
+                    debugNb += string.Join(" | ", results);
+
+                    if (succes > 0)
+                    {
+                        await commandContext.Message.RespondAsync($"You rolled : { nbDicesRoll} dices at difficulty {difficulty} \nYou earned : { succes} succes \n{debugNb}");
+                    }
+                    else
+                    {
+                        await commandContext.Message.RespondAsync($"You rolled : {nbDicesRoll} dices at difficulty {difficulty} \nNo successes \n{debugNb}");
+                    }
+                }
+            }
+        }
+
+        #endregion
     }
 }
