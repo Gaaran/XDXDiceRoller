@@ -238,45 +238,20 @@ namespace XDX_dice_roller
                     await commandContext.Message.RespondAsync(tempString);
             }
 
-            if (tableTop.ToLower() == STATE.savage.ToString().ToLower())
-            {
-                state = STATE.savage;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : Savage mode.");
-            }
+            state = (STATE)Enum.Parse(typeof(STATE), tableTop);
+            await commandContext.Message.RespondAsync($"The dice bot has been set on : {Enum.Parse(typeof(STATE), tableTop).ToString()}.");
 
-            if (tableTop.ToLower() == STATE.hexagon.ToString().ToLower())
-            { 
-                state = STATE.hexagon;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : Hexagon mode.");
-            }
-
-            if (tableTop.ToLower() == STATE.normal.ToString().ToLower())
-            {
-                state = STATE.normal;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : Normal mode.");
-            }
-
-            if (tableTop.ToLower() == STATE.wta.ToString().ToLower())
-            {
-                state = STATE.wta;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : WereWolf The Apocalypse mode.");
-            }
-
-            if (tableTop.ToLower() == STATE.aventure.ToString().ToLower())
-            {
-                state = STATE.aventure;
-                await commandContext.Message.RespondAsync($"The dice bot has been set on : Aventure mode.");
-            }
         }
 
         [Command("h")]
         public async Task HelpMe(CommandContext commandContext)
         {
-            await commandContext.Message.RespondAsync($"Commands :");
-            await commandContext.Message.RespondAsync($"'!succes' X to set the number that its need to get a succes from the roll.");
-            await commandContext.Message.RespondAsync($"'!reroll' X to set the number that a reroll will be add to the pool.");
-            await commandContext.Message.RespondAsync($"'!roll' XDX to set the number of dice and faces, first X stand for dice number.");
-            await commandContext.Message.RespondAsync($"'!Tabletop Name' To use a preset of one of the table top rules. Please use '!Tabletop' to display all the TableTop available.");
+            string helpMessage = "```Commands :\n\n'!succes' X to set the number that its need to get a succes from the roll." +
+                "\n\n'!reroll' X to set the number that a reroll will be add to the pool." +
+                "\n\n'!roll' XDX to set the number of dice and faces, first X stand for dice number." +
+                "\n\n'!Tabletop Name' To use a preset of one of the table top rules. Please use '!Tabletop' to display all the TableTop available.```";
+
+            await commandContext.Message.RespondAsync(helpMessage);
         }
 
         #region SW
